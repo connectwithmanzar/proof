@@ -1,0 +1,100 @@
+You are building **Proof** — a new app (NOT fitness-os / fitness-engine).
+
+Zero spend. Phone-first PWA. No login in v1.
+
+## Product (frozen)
+Private weekly body-progress photos + weight so the user can see change.
+
+- Cadence: weekly **Sunday** check-in reminder
+- Capture: **front photo required**, side optional, weight (kg), short note
+- Screens: Home · Capture · Timeline · Compare
+- Privacy: photos stay on this device (IndexedDB). Show a clear banner.
+- NOT in v1: AI body-fat, cloud sync, social, diet/workout logging, accounts
+
+## Bootstrap (if folder is empty / no package.json)
+In `/Users/manzar.i/Desktop/proof` (or current workspace):
+
+```bash
+npx create-next-app@14 . --typescript --tailwind --eslint --app --src-dir --import-alias "@/*" --use-npm --yes
+```
+
+If create-next-app refuses non-empty dir, scaffold into a temp folder and move files, keeping PASTE_INTO_CURSOR_PROOF_MVP.txt.
+
+Then add a minimal PWA: `public/manifest.json` (name Proof, standalone, theme #000), icons (simple SVG or PNG), `apple-web-app` meta in layout.
+
+## App structure
+- `src/app/page.tsx` — Home
+- `src/app/capture/page.tsx` — Capture
+- `src/app/timeline/page.tsx` — Timeline
+- `src/app/compare/page.tsx` — Compare
+- `src/components/BottomNav.tsx` — Home / Capture / Timeline / Compare
+- `src/components/PrivacyBanner.tsx` — dismissible “Photos stay on this phone”
+- `src/lib/entries.ts` — types + localStorage index of entries
+- `src/lib/photo-db.ts` — IndexedDB helpers for image blobs
+- `src/lib/reminders.ts` — Sunday reminder via Notification API (request permission once)
+
+## Data model
+```ts
+type ProgressEntry = {
+  id: string;           // uuid
+  createdAt: string;    // ISO
+  weightKg: number;
+  note?: string;
+  hasFront: true;
+  hasSide: boolean;
+};
+```
+- Entry metadata array in `localStorage` key `proof_entries`
+- Photos in IndexedDB DB `proof_photos`, store `blobs`, key `${id}:front` / `${id}:side`
+
+## Home
+- Title **Proof**
+- If Sunday check-in due (no entry in current local week Sun–Sat, or last entry >7 days — use “no entry since last Sunday 00:00 local”): big CTA **Check in today**
+- Else: “Next Sunday” + days left
+- Latest front thumb + weight
+- Mini sparkline of last 8 weights (SVG, no chart lib)
+- Link buttons to Timeline / Compare
+- Privacy banner at top once
+
+## Capture
+- File inputs / capture: `accept="image/*" capture="environment"` for front + optional side
+- Show previews before save
+- Weight number input (kg), note text
+- Save: write blobs to IDB, push metadata, go to Timeline
+- Validate: front + finite weight > 0
+
+## Timeline
+- Newest first cards: date, weight, note, front thumb (load from IDB)
+- Tap → optional detail or jump to Compare with this id selected
+- Empty state: “Sunday check-in starts your timeline”
+
+## Compare
+- Default A = oldest, B = newest (if ≥2 entries)
+- Dropdowns or prev/next to pick any two
+- Side-by-side front photos + weights + delta kg
+- If <2 entries: explain need two check-ins
+
+## Reminder
+- On first visit Home: button “Remind me Sundays” → Notification permission
+- If granted, schedule logic: on load, if Sunday local and no entry this week and not notified today, show Notification “Proof — time for your weekly check-in”
+- No paid push service — page must be opened periodically; also show in-app Sunday banner
+
+## UI
+- Dark OLED (#000), system fonts, large titles, big tap targets (gym bathroom lighting)
+- Bottom nav ~48px+
+- No Google Fonts CDN required
+- Mobile-first max-width ~480px centered
+- ErrorBoundary optional; no blank white crashes
+
+## Quality bar
+- `npx tsc --noEmit` and `npx next lint` clean
+- Works offline after first load for viewing saved entries (PWA cache basic pages; photos from IDB)
+- README: one paragraph what Proof is + how to run + privacy note
+
+## Git
+- `git init` if needed
+- Commit: `feat: Proof MVP — weekly photo + weight progress PWA`
+- Do NOT push to fitness-os. Create/use a new repo only if user already has one named proof; otherwise leave local commit and tell user to create empty GitHub repo `proof` when ready.
+- Do NOT spend money / add paid APIs
+
+Start now. Implement fully. Report files created + how to `npm run dev` and test Capture → Timeline → Compare.
