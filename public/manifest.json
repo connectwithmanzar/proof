@@ -1,7 +1,7 @@
 {
-  "name": "Proof",
-  "short_name": "Proof",
-  "description": "Private weekly body-progress photos and weight. Stays on this phone.",
+  "name": "Reckoning",
+  "short_name": "Reckoning",
+  "description": "Weekly body-progress photos and weight. You vs you. Private on this phone.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

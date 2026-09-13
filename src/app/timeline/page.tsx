@@ -35,7 +35,7 @@ export default function TimelinePage() {
           <p className="text-lg text-zinc-300">
             Sunday check-in starts your timeline
           </p>
-          <Link href="/capture" className="proof-btn-primary mt-6">
+          <Link href="/capture" className="reckoning-btn-primary mt-6">
             Check in today
           </Link>
         </div>

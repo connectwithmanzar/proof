@@ -113,7 +113,7 @@ export default function CapturePage() {
           <Preview src={frontUrl} label="Front" />
           <label
             htmlFor={frontId}
-            className="proof-btn-secondary mt-3 cursor-pointer text-sm"
+            className="reckoning-btn-secondary mt-3 cursor-pointer text-sm"
           >
             {frontFile ? "Retake front" : "Front photo"}
           </label>
@@ -132,7 +132,7 @@ export default function CapturePage() {
           <Preview src={sideUrl} label="Side (optional)" />
           <label
             htmlFor={sideId}
-            className="proof-btn-secondary mt-3 cursor-pointer text-sm"
+            className="reckoning-btn-secondary mt-3 cursor-pointer text-sm"
           >
             {sideFile ? "Retake side" : "Side photo"}
           </label>
@@ -161,7 +161,7 @@ export default function CapturePage() {
         placeholder="e.g. 74.2"
         value={weight}
         onChange={(event) => setWeight(event.target.value)}
-        className="proof-field mt-2"
+        className="reckoning-field mt-2"
       />
 
       <label htmlFor={noteId} className="mt-5 block text-sm text-zinc-400">
@@ -174,7 +174,7 @@ export default function CapturePage() {
         placeholder="Lighting, pump, whatever you want to remember"
         value={note}
         onChange={(event) => setNote(event.target.value)}
-        className="proof-field mt-2 resize-none"
+        className="reckoning-field mt-2 resize-none"
       />
 
       {error ? (
@@ -187,7 +187,7 @@ export default function CapturePage() {
         type="button"
         onClick={onSave}
         disabled={saving}
-        className="proof-btn-primary mt-6 disabled:opacity-60"
+        className="reckoning-btn-primary mt-6 disabled:opacity-60"
       >
         {saving ? "Saving…" : "Save check-in"}
       </button>

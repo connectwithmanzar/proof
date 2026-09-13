@@ -1,4 +1,4 @@
-const CACHE = "proof-v1";
+const CACHE = "reckoning-v1";
 const PRECACHE = [
   "/",
   "/capture",

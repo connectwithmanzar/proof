@@ -12,7 +12,7 @@ export default function Error({
       <p className="mt-3 text-zinc-400">
         Your photos are still on this phone. Try again.
       </p>
-      <button type="button" onClick={reset} className="proof-btn-primary mt-8">
+      <button type="button" onClick={reset} className="reckoning-btn-primary mt-8">
         Try again
       </button>
     </main>

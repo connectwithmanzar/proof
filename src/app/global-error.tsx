@@ -19,7 +19,7 @@ export default function GlobalError({
           padding: 24,
         }}
       >
-        <h1 style={{ fontSize: 28, margin: 0 }}>Proof hit a problem</h1>
+        <h1 style={{ fontSize: 28, margin: 0 }}>Reckoning hit a problem</h1>
         <p style={{ color: "#a1a1aa", marginTop: 12 }}>
           Your check-ins stay on this phone.
         </p>

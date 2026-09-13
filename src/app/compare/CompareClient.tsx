@@ -45,7 +45,7 @@ function EntryPicker({
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="proof-field mt-2"
+        className="reckoning-field mt-2"
       >
         {entries.map((entry) => (
           <option key={entry.id} value={entry.id}>
@@ -56,7 +56,7 @@ function EntryPicker({
       <div className="mt-2 grid grid-cols-2 gap-2">
         <button
           type="button"
-          className="proof-btn-secondary min-h-12 text-sm disabled:opacity-40"
+          className="reckoning-btn-secondary min-h-12 text-sm disabled:opacity-40"
           disabled={index <= 0}
           onClick={() => onChange(entries[index - 1].id)}
         >
@@ -64,7 +64,7 @@ function EntryPicker({
         </button>
         <button
           type="button"
-          className="proof-btn-secondary min-h-12 text-sm disabled:opacity-40"
+          className="reckoning-btn-secondary min-h-12 text-sm disabled:opacity-40"
           disabled={index < 0 || index >= entries.length - 1}
           onClick={() => onChange(entries[index + 1].id)}
         >
@@ -139,7 +139,7 @@ export function CompareClient() {
             Need two check-ins to compare. Save this week, then come back after
             next Sunday.
           </p>
-          <Link href="/capture" className="proof-btn-primary mt-6">
+          <Link href="/capture" className="reckoning-btn-primary mt-6">
             Add a check-in
           </Link>
         </div>

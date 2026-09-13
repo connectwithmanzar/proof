@@ -59,7 +59,7 @@ export function maybeNotifySundayCheckIn(
   if (localStorage.getItem(NOTIFIED_KEY) === today) return false;
 
   try {
-    new Notification("Proof — time for your weekly check-in");
+    new Notification("Reckoning — time for your weekly check-in");
     localStorage.setItem(NOTIFIED_KEY, today);
     return true;
   } catch {

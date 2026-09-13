@@ -4,15 +4,15 @@ import { PwaRegister } from "@/components/PwaRegister";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Proof",
+  title: "Reckoning",
   description:
-    "Private weekly body-progress photos and weight. Stays on this phone.",
-  applicationName: "Proof",
+    "Weekly body-progress photos and weight. You vs you. Private on this phone.",
+  applicationName: "Reckoning",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Proof",
+    title: "Reckoning",
   },
   icons: {
     icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
@@ -40,7 +40,7 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-title" content="Proof" />
+        <meta name="apple-mobile-web-app-title" content="Reckoning" />
         <meta
           name="apple-mobile-web-app-status-bar-style"
           content="black-translucent"

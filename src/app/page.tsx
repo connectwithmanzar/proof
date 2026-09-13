@@ -68,9 +68,9 @@ export default function HomePage() {
       <p className="text-sm font-medium uppercase tracking-[0.18em] text-zinc-500">
         Weekly check-in
       </p>
-      <h1 className="mt-1 text-5xl font-semibold tracking-tight">Proof</h1>
+      <h1 className="mt-1 text-5xl font-semibold tracking-tight">Reckoning</h1>
       <p className="mt-3 text-base leading-snug text-zinc-400">
-        Front photo + weight, once a Sunday. See the change yourself.
+        Front photo + weight, once a Sunday. Face the change yourself.
       </p>
 
       {showSundayBanner ? (
@@ -86,7 +86,7 @@ export default function HomePage() {
         {!ready ? (
           <div className="h-14 animate-pulse rounded-2xl bg-zinc-900" />
         ) : due ? (
-          <Link href="/capture" className="proof-btn-primary text-lg">
+          <Link href="/capture" className="reckoning-btn-primary text-lg">
             Check in today
           </Link>
         ) : (
@@ -141,10 +141,10 @@ export default function HomePage() {
       </section>
 
       <div className="mt-8 grid grid-cols-2 gap-3">
-        <Link href="/timeline" className="proof-btn-secondary">
+        <Link href="/timeline" className="reckoning-btn-secondary">
           Timeline
         </Link>
-        <Link href="/compare" className="proof-btn-secondary">
+        <Link href="/compare" className="reckoning-btn-secondary">
           Compare
         </Link>
       </div>
@@ -152,7 +152,7 @@ export default function HomePage() {
       <section className="mt-8">
         {remindState === "on" ? (
           <p className="text-sm text-zinc-500">
-            Sunday reminders on. Open Proof on Sundays — no cloud push.
+            Sunday reminders on. Open Reckoning on Sundays — no cloud push.
           </p>
         ) : remindState === "denied" ? (
           <p className="text-sm text-zinc-500">
@@ -168,7 +168,7 @@ export default function HomePage() {
           <button
             type="button"
             onClick={enableReminders}
-            className="proof-btn-secondary"
+            className="reckoning-btn-secondary"
           >
             Remind me Sundays
           </button>
