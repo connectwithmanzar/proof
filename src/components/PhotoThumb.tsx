@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getPhoto, type PhotoKind } from "@/lib/photo-db";
+import { getDisplayPhoto } from "@/lib/repo";
+import type { PhotoKind } from "@/lib/photo-db";
 
 type PhotoThumbProps = {
   id: string;
@@ -22,7 +23,7 @@ export function PhotoThumb({
     let cancelled = false;
     let objectUrl: string | null = null;
 
-    getPhoto(id, kind)
+    getDisplayPhoto(id, kind)
       .then((blob) => {
         if (!blob) return;
         const next = URL.createObjectURL(blob);
@@ -56,7 +57,7 @@ export function PhotoThumb({
   }
 
   return (
-    // Blob URLs from IndexedDB cannot be optimized by next/image.
+    // Private blobs from IndexedDB or a signed storage download.
     // eslint-disable-next-line @next/next/no-img-element
     <img src={src} alt={alt} className={className} />
   );

@@ -4,11 +4,11 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { PhotoThumb } from "@/components/PhotoThumb";
+import { useSession } from "@/components/SessionProvider";
 import {
   formatDeltaKg,
   formatEntryDate,
   formatKg,
-  getEntries,
   getSortedOldestFirst,
   type ProgressEntry,
 } from "@/lib/entries";
@@ -78,27 +78,23 @@ function EntryPicker({
 export function CompareClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [ready, setReady] = useState(false);
-  const [entries, setEntries] = useState<ProgressEntry[]>([]);
+  const { entries: sessionEntries, ready } = useSession();
+  const entries = getSortedOldestFirst(sessionEntries);
   const [aId, setAId] = useState("");
   const [bId, setBId] = useState("");
 
   useEffect(() => {
-    const loaded = getSortedOldestFirst(getEntries());
-    setEntries(loaded);
-    if (loaded.length >= 2) {
-      const picked = pickDefaultIds(
-        loaded,
-        searchParams.get("a"),
-        searchParams.get("b"),
-      );
-      setAId(picked.a);
-      setBId(picked.b);
-    }
-    setReady(true);
-    // Intentionally read search params once on mount.
+    if (!ready || entries.length < 2) return;
+    const picked = pickDefaultIds(
+      entries,
+      searchParams.get("a"),
+      searchParams.get("b"),
+    );
+    setAId((current) => current || picked.a);
+    setBId((current) => current || picked.b);
+    // Intentionally read search params once when session data arrives.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [ready, sessionEntries]);
 
   function selectA(id: string) {
     setAId(id);

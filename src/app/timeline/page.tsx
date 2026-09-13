@@ -1,24 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { PhotoThumb } from "@/components/PhotoThumb";
+import { useSession } from "@/components/SessionProvider";
 import {
   formatEntryDate,
   formatKg,
-  getEntries,
   getSortedNewestFirst,
-  type ProgressEntry,
 } from "@/lib/entries";
 
 export default function TimelinePage() {
-  const [ready, setReady] = useState(false);
-  const [entries, setEntries] = useState<ProgressEntry[]>([]);
-
-  useEffect(() => {
-    setEntries(getSortedNewestFirst(getEntries()));
-    setReady(true);
-  }, []);
+  const { entries, ready } = useSession();
+  const newestFirst = getSortedNewestFirst(entries);
 
   return (
     <main className="px-5 pt-6">
@@ -26,11 +19,8 @@ export default function TimelinePage() {
       <p className="mt-2 text-zinc-400">Newest first. Tap a card to compare.</p>
 
       {!ready ? (
-        <div className="mt-8 space-y-3">
-          <div className="h-28 animate-pulse rounded-2xl bg-zinc-900" />
-          <div className="h-28 animate-pulse rounded-2xl bg-zinc-900" />
-        </div>
-      ) : entries.length === 0 ? (
+        <p className="mt-8 text-zinc-500">Loading your check-ins…</p>
+      ) : newestFirst.length === 0 ? (
         <div className="mt-10">
           <p className="text-lg text-zinc-300">
             Sunday check-in starts your timeline
@@ -41,7 +31,7 @@ export default function TimelinePage() {
         </div>
       ) : (
         <ul className="mt-8 space-y-3">
-          {entries.map((entry) => (
+          {newestFirst.map((entry) => (
             <li key={entry.id}>
               <Link
                 href={`/compare?b=${entry.id}`}

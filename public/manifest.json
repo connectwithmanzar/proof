@@ -1,7 +1,7 @@
 {
   "name": "Reckoning",
   "short_name": "Reckoning",
-  "description": "Weekly body-progress photos and weight. You vs you. Private on this phone.",
+  "description": "Weekly body-progress photos and weight. You vs you. Synced to your private Reckoning account.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

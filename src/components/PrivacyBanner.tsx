@@ -19,7 +19,8 @@ export function PrivacyBanner() {
       role="status"
     >
       <p className="flex-1 text-sm leading-snug text-zinc-300">
-        Photos stay on this phone. Nothing is uploaded.
+        Photos sync encrypted to your private Reckoning account. Only you can
+        see them. Not a public feed.
       </p>
       <button
         type="button"

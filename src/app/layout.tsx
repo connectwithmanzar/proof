@@ -1,12 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { BottomNav } from "@/components/BottomNav";
-import { PwaRegister } from "@/components/PwaRegister";
+import { AppFrame } from "@/components/AppFrame";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Reckoning",
   description:
-    "Weekly body-progress photos and weight. You vs you. Private on this phone.",
+    "Weekly body-progress photos and weight. You vs you. Synced to your private Reckoning account.",
   applicationName: "Reckoning",
   manifest: "/manifest.json",
   appleWebApp: {
@@ -48,16 +47,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icon-192.png" />
       </head>
       <body className="bg-black text-white antialiased">
-        <div
-          className="app-shell mx-auto min-h-dvh w-full max-w-[480px] bg-black"
-          style={{
-            paddingBottom: "calc(5.5rem + env(safe-area-inset-bottom))",
-          }}
-        >
-          {children}
-        </div>
-        <BottomNav />
-        <PwaRegister />
+        <AppFrame>{children}</AppFrame>
       </body>
     </html>
   );

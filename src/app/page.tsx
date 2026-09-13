@@ -1,20 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import { InstallTip } from "@/components/InstallTip";
 import { PhotoThumb } from "@/components/PhotoThumb";
 import { PrivacyBanner } from "@/components/PrivacyBanner";
+import { useSession } from "@/components/SessionProvider";
 import { WeightSparkline } from "@/components/WeightSparkline";
 import {
   daysUntilNextSunday,
   formatEntryDate,
   formatKg,
-  getEntries,
   getSortedNewestFirst,
   getSortedOldestFirst,
   isCheckInDue,
-  type ProgressEntry,
 } from "@/lib/entries";
 import {
   hasOptedIntoReminders,
@@ -24,31 +23,23 @@ import {
   requestSundayReminders,
 } from "@/lib/reminders";
 
-function subscribeEntries() {
-  return () => {};
-}
-
-function useLocalEntries(): ProgressEntry[] {
-  return useSyncExternalStore(subscribeEntries, getEntries, () => []);
-}
-
 export default function HomePage() {
-  const entries = useLocalEntries();
+  const { user, entries, ready, signOut } = useSession();
   const [remindState, setRemindState] = useState<
     "idle" | "on" | "denied" | "unsupported"
   >("idle");
   const [sundayBanner, setSundayBanner] = useState(false);
 
   useEffect(() => {
-    const loaded = getEntries();
+    if (!ready) return;
     const permission = notificationPermission();
     if (permission === "unsupported") setRemindState("unsupported");
     else if (permission === "granted" || hasOptedIntoReminders()) {
       setRemindState("on");
     } else if (permission === "denied") setRemindState("denied");
-    maybeNotifySundayCheckIn(loaded);
-    setSundayBanner(isSunday() && isCheckInDue(loaded));
-  }, []);
+    maybeNotifySundayCheckIn(entries);
+    setSundayBanner(isSunday() && isCheckInDue(entries));
+  }, [ready, entries]);
 
   async function enableReminders() {
     const permission = await requestSundayReminders();
@@ -91,7 +82,9 @@ export default function HomePage() {
       ) : null}
 
       <section className="mt-8">
-        {due ? (
+        {!ready ? (
+          <p className="text-sm text-zinc-500">Loading your check-ins…</p>
+        ) : due ? (
           <Link href="/capture" className="reckoning-btn-capture">
             Take this week’s photo
           </Link>
@@ -135,7 +128,9 @@ export default function HomePage() {
           </Link>
         ) : (
           <p className="mt-3 text-zinc-500">
-            No check-in yet. Sunday starts the record.
+            {ready
+              ? "No check-in yet. Sunday starts the record."
+              : "Loading…"}
           </p>
         )}
         <p className="mt-3 flex gap-4 text-sm text-zinc-500">
@@ -160,7 +155,7 @@ export default function HomePage() {
       <section className="mt-8">
         {remindState === "on" ? (
           <p className="text-sm text-zinc-500">
-            Sunday reminders on. Open Reckoning on Sundays — no cloud push.
+            Sunday reminders on. Open Reckoning on Sundays — no paid push.
           </p>
         ) : remindState === "denied" ? (
           <p className="text-sm text-zinc-500">
@@ -181,6 +176,23 @@ export default function HomePage() {
             Remind me Sundays
           </button>
         )}
+      </section>
+
+      <section className="mt-10 border-t border-zinc-900 pt-6">
+        <p className="text-sm text-zinc-500">
+          Signed in as {user?.email ?? "your account"}
+        </p>
+        <p className="mt-2 text-xs leading-relaxed text-zinc-600">
+          HTTPS in transit. Encrypted at rest. Only your account can read these
+          rows. No public feed.
+        </p>
+        <button
+          type="button"
+          onClick={() => void signOut()}
+          className="mt-4 min-h-11 text-sm text-zinc-400 hover:text-white"
+        >
+          Sign out
+        </button>
       </section>
     </main>
   );

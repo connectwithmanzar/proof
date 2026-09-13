@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useState } from "react";
-import { addEntry } from "@/lib/entries";
-import { putPhoto } from "@/lib/photo-db";
+import { useSession } from "@/components/SessionProvider";
+import { saveCheckIn } from "@/lib/repo";
 
 function newId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -33,6 +33,7 @@ function Preview({ src, label }: { src: string | null; label: string }) {
 
 export default function CapturePage() {
   const router = useRouter();
+  const { reload } = useSession();
   const frontId = useId();
   const sideId = useId();
   const weightId = useId();
@@ -46,6 +47,7 @@ export default function CapturePage() {
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [draftId, setDraftId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!frontFile) {
@@ -80,23 +82,23 @@ export default function CapturePage() {
 
     setSaving(true);
     setError(null);
-    const id = newId();
+    const id = draftId ?? newId();
+    setDraftId(id);
+    const trimmed = note.trim();
 
     try {
-      await putPhoto(id, "front", frontFile);
-      if (sideFile) await putPhoto(id, "side", sideFile);
-      const trimmed = note.trim();
-      addEntry({
+      await saveCheckIn({
         id,
         createdAt: new Date().toISOString(),
         weightKg,
         note: trimmed ? trimmed : undefined,
-        hasFront: true,
-        hasSide: Boolean(sideFile),
+        front: frontFile,
+        side: sideFile,
       });
+      await reload();
       router.push("/timeline");
     } catch {
-      setError("Could not save on this phone. Try again.");
+      setError("Couldn’t sync — try again");
       setSaving(false);
     }
   }
