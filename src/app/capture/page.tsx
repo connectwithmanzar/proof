@@ -108,12 +108,12 @@ export default function CapturePage() {
         Front is required. Side is optional. Weight in kg.
       </p>
 
-      <div className="mt-6 grid grid-cols-2 gap-3">
+      <div className="mt-6 space-y-6">
         <div>
           <Preview src={frontUrl} label="Front" />
           <label
             htmlFor={frontId}
-            className="reckoning-btn-secondary mt-3 cursor-pointer text-sm"
+            className="reckoning-btn-secondary mt-3 min-h-14 cursor-pointer text-base"
           >
             {frontFile ? "Retake front" : "Front photo"}
           </label>
@@ -132,7 +132,7 @@ export default function CapturePage() {
           <Preview src={sideUrl} label="Side (optional)" />
           <label
             htmlFor={sideId}
-            className="reckoning-btn-secondary mt-3 cursor-pointer text-sm"
+            className="reckoning-btn-secondary mt-3 min-h-14 cursor-pointer text-base"
           >
             {sideFile ? "Retake side" : "Side photo"}
           </label>

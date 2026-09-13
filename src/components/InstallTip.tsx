@@ -1,14 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { isIOS, isStandalone } from "@/lib/display-mode";
 
-const DISMISS_KEY = "proof_privacy_dismissed";
+const DISMISS_KEY = "proof_install_tip_dismissed";
 
-export function PrivacyBanner() {
+export function InstallTip() {
   const [visible, setVisible] = useState(false);
+  const [ios, setIos] = useState(false);
 
   useEffect(() => {
-    setVisible(localStorage.getItem(DISMISS_KEY) !== "1");
+    if (isStandalone()) return;
+    if (localStorage.getItem(DISMISS_KEY) === "1") return;
+    setIos(isIOS());
+    setVisible(true);
   }, []);
 
   if (!visible) return null;
@@ -19,7 +24,9 @@ export function PrivacyBanner() {
       role="status"
     >
       <p className="flex-1 text-sm leading-snug text-zinc-300">
-        Photos stay on this phone. Nothing is uploaded.
+        {ios
+          ? "Add Reckoning to your Home Screen — tap Share, then Add to Home Screen."
+          : "Install Reckoning — open the browser menu and tap Install app / Add to Home Screen."}
       </p>
       <button
         type="button"
@@ -28,7 +35,7 @@ export function PrivacyBanner() {
           setVisible(false);
         }}
         className="min-h-[44px] min-w-[44px] shrink-0 rounded-xl text-sm text-zinc-400 hover:text-white"
-        aria-label="Dismiss privacy notice"
+        aria-label="Dismiss install tip"
       >
         OK
       </button>

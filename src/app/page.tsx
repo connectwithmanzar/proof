@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { InstallTip } from "@/components/InstallTip";
 import { PhotoThumb } from "@/components/PhotoThumb";
 import { PrivacyBanner } from "@/components/PrivacyBanner";
 import { WeightSparkline } from "@/components/WeightSparkline";
@@ -23,23 +24,30 @@ import {
   requestSundayReminders,
 } from "@/lib/reminders";
 
+function subscribeEntries() {
+  return () => {};
+}
+
+function useLocalEntries(): ProgressEntry[] {
+  return useSyncExternalStore(subscribeEntries, getEntries, () => []);
+}
+
 export default function HomePage() {
-  const [ready, setReady] = useState(false);
-  const [entries, setEntries] = useState<ProgressEntry[]>([]);
+  const entries = useLocalEntries();
   const [remindState, setRemindState] = useState<
     "idle" | "on" | "denied" | "unsupported"
   >("idle");
+  const [sundayBanner, setSundayBanner] = useState(false);
 
   useEffect(() => {
     const loaded = getEntries();
-    setEntries(loaded);
     const permission = notificationPermission();
     if (permission === "unsupported") setRemindState("unsupported");
     else if (permission === "granted" || hasOptedIntoReminders()) {
       setRemindState("on");
     } else if (permission === "denied") setRemindState("denied");
     maybeNotifySundayCheckIn(loaded);
-    setReady(true);
+    setSundayBanner(isSunday() && isCheckInDue(loaded));
   }, []);
 
   async function enableReminders() {
@@ -59,21 +67,21 @@ export default function HomePage() {
   const sparkValues = getSortedOldestFirst(entries)
     .slice(-8)
     .map((entry) => entry.weightKg);
-  const showSundayBanner = ready && isSunday() && due;
 
   return (
     <main className="px-5 pt-6">
       <PrivacyBanner />
+      <InstallTip />
 
       <p className="text-sm font-medium uppercase tracking-[0.18em] text-zinc-500">
-        Weekly check-in
+        You vs you
       </p>
       <h1 className="mt-1 text-5xl font-semibold tracking-tight">Reckoning</h1>
       <p className="mt-3 text-base leading-snug text-zinc-400">
         Front photo + weight, once a Sunday. Face the change yourself.
       </p>
 
-      {showSundayBanner ? (
+      {sundayBanner ? (
         <p
           className="mt-5 rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-zinc-200"
           role="status"
@@ -83,18 +91,21 @@ export default function HomePage() {
       ) : null}
 
       <section className="mt-8">
-        {!ready ? (
-          <div className="h-14 animate-pulse rounded-2xl bg-zinc-900" />
-        ) : due ? (
-          <Link href="/capture" className="reckoning-btn-primary text-lg">
-            Check in today
+        {due ? (
+          <Link href="/capture" className="reckoning-btn-capture">
+            Take this week’s photo
           </Link>
         ) : (
-          <div className="rounded-2xl border border-zinc-800 px-4 py-4">
-            <p className="text-sm text-zinc-500">Next Sunday</p>
-            <p className="mt-1 text-2xl font-semibold">
-              {daysLeft === 1 ? "1 day left" : `${daysLeft} days left`}
-            </p>
+          <div className="space-y-3">
+            <div className="rounded-2xl border border-zinc-800 px-4 py-4">
+              <p className="text-sm text-zinc-500">Next Sunday</p>
+              <p className="mt-1 text-2xl font-semibold">
+                {daysLeft === 1 ? "1 day left" : `${daysLeft} days left`}
+              </p>
+            </div>
+            <Link href="/capture" className="reckoning-btn-secondary">
+              Open Capture
+            </Link>
           </div>
         )}
       </section>
@@ -103,9 +114,7 @@ export default function HomePage() {
         <h2 className="text-sm font-medium uppercase tracking-[0.14em] text-zinc-500">
           Latest
         </h2>
-        {!ready ? (
-          <div className="mt-3 h-28 animate-pulse rounded-2xl bg-zinc-900" />
-        ) : newest ? (
+        {newest ? (
           <Link
             href={`/compare?b=${newest.id}`}
             className="mt-3 flex items-center gap-4 rounded-2xl border border-zinc-800 p-3 active:bg-zinc-950"
@@ -129,6 +138,14 @@ export default function HomePage() {
             No check-in yet. Sunday starts the record.
           </p>
         )}
+        <p className="mt-3 flex gap-4 text-sm text-zinc-500">
+          <Link href="/timeline" className="min-h-11 py-2 hover:text-white">
+            Timeline
+          </Link>
+          <Link href="/compare" className="min-h-11 py-2 hover:text-white">
+            Compare
+          </Link>
+        </p>
       </section>
 
       <section className="mt-8">
@@ -136,18 +153,9 @@ export default function HomePage() {
           Weight
         </h2>
         <div className="mt-3 rounded-2xl border border-zinc-800 px-3 py-3">
-          <WeightSparkline values={ready ? sparkValues : []} />
+          <WeightSparkline values={sparkValues} />
         </div>
       </section>
-
-      <div className="mt-8 grid grid-cols-2 gap-3">
-        <Link href="/timeline" className="reckoning-btn-secondary">
-          Timeline
-        </Link>
-        <Link href="/compare" className="reckoning-btn-secondary">
-          Compare
-        </Link>
-      </div>
 
       <section className="mt-8">
         {remindState === "on" ? (

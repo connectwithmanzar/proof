@@ -3,15 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const ITEMS = [
+const SIDE_ITEMS = [
   { href: "/", label: "Home", icon: HomeIcon },
-  { href: "/capture", label: "Capture", icon: CaptureIcon },
   { href: "/timeline", label: "Timeline", icon: TimelineIcon },
   { href: "/compare", label: "Compare", icon: CompareIcon },
 ] as const;
 
 export function BottomNav() {
   const pathname = usePathname();
+  const captureActive = pathname.startsWith("/capture");
 
   return (
     <nav
@@ -19,29 +19,51 @@ export function BottomNav() {
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       aria-label="Primary"
     >
-      <ul className="grid grid-cols-4">
-        {ITEMS.map((item) => {
-          const active =
-            item.href === "/"
-              ? pathname === "/"
-              : pathname.startsWith(item.href);
-          const Icon = item.icon;
-          return (
-            <li key={item.href}>
-              <Link
-                href={item.href}
-                className={`flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium ${
-                  active ? "text-white" : "text-zinc-500"
-                }`}
-              >
-                <Icon />
-                {item.label}
-              </Link>
-            </li>
-          );
-        })}
+      <ul className="grid grid-cols-4 items-end px-1 pt-3">
+        <SideTab item={SIDE_ITEMS[0]} pathname={pathname} />
+        <li>
+          <Link
+            href="/capture"
+            className={`flex min-h-14 flex-col items-center justify-end gap-1 pb-1 text-[11px] font-medium ${
+              captureActive ? "text-white" : "text-zinc-500"
+            }`}
+          >
+            <span className="flex h-14 w-14 -translate-y-3 items-center justify-center rounded-full bg-white text-black shadow-[0_6px_20px_rgba(0,0,0,0.45)]">
+              <CaptureIcon />
+            </span>
+            <span className="-mt-2">Capture</span>
+          </Link>
+        </li>
+        <SideTab item={SIDE_ITEMS[1]} pathname={pathname} />
+        <SideTab item={SIDE_ITEMS[2]} pathname={pathname} />
       </ul>
     </nav>
+  );
+}
+
+function SideTab({
+  item,
+  pathname,
+}: {
+  item: (typeof SIDE_ITEMS)[number];
+  pathname: string;
+}) {
+  const active =
+    item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+  const Icon = item.icon;
+
+  return (
+    <li>
+      <Link
+        href={item.href}
+        className={`flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium ${
+          active ? "text-white" : "text-zinc-500"
+        }`}
+      >
+        <Icon />
+        {item.label}
+      </Link>
+    </li>
   );
 }
 
@@ -60,7 +82,7 @@ function HomeIcon() {
 
 function CaptureIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden>
       <rect
         x="3"
         y="6"

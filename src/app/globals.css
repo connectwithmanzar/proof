@@ -13,6 +13,8 @@ body {
   background: #000000;
   color: var(--foreground);
   min-height: 100%;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -36,17 +38,31 @@ select {
   color-scheme: dark;
 }
 
+.app-shell {
+  padding-top: env(safe-area-inset-top);
+}
+
+@media (display-mode: standalone) {
+  .app-shell {
+    padding-top: max(1.25rem, env(safe-area-inset-top));
+  }
+}
+
 @layer components {
   .reckoning-btn {
-    @apply flex min-h-14 w-full items-center justify-center rounded-2xl px-5 text-base font-semibold;
+    @apply flex min-h-16 w-full items-center justify-center rounded-2xl px-5 text-base font-semibold;
   }
 
   .reckoning-btn-primary {
-    @apply reckoning-btn bg-white text-black active:bg-zinc-200;
+    @apply reckoning-btn bg-white text-lg text-black active:bg-zinc-200;
   }
 
   .reckoning-btn-secondary {
     @apply reckoning-btn border border-zinc-700 bg-zinc-950 text-white active:bg-zinc-900;
+  }
+
+  .reckoning-btn-capture {
+    @apply flex min-h-[4.25rem] w-full items-center justify-center rounded-2xl bg-white px-5 text-xl font-semibold text-black active:bg-zinc-200;
   }
 
   .reckoning-field {

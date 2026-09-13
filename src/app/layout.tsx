@@ -49,9 +49,9 @@ export default function RootLayout({
       </head>
       <body className="bg-black text-white antialiased">
         <div
-          className="mx-auto min-h-dvh w-full max-w-[480px] bg-black"
+          className="app-shell mx-auto min-h-dvh w-full max-w-[480px] bg-black"
           style={{
-            paddingBottom: "calc(4.75rem + env(safe-area-inset-bottom))",
+            paddingBottom: "calc(5.5rem + env(safe-area-inset-bottom))",
           }}
         >
           {children}
