@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useState, type ChangeEvent } from "react";
 import { useSession } from "@/components/SessionProvider";
 import { saveCheckIn } from "@/lib/repo";
 
@@ -31,11 +31,64 @@ function Preview({ src, label }: { src: string | null; label: string }) {
   );
 }
 
+function PhotoActions({
+  takeId,
+  libraryId,
+  takeLabel,
+  libraryLabel,
+  onPick,
+}: {
+  takeId: string;
+  libraryId: string;
+  takeLabel: string;
+  libraryLabel: string;
+  onPick: (file: File | null) => void;
+}) {
+  function handleChange(event: ChangeEvent<HTMLInputElement>) {
+    onPick(event.target.files?.[0] ?? null);
+    event.target.value = "";
+  }
+
+  return (
+    <div className="mt-3 space-y-2">
+      <label
+        htmlFor={takeId}
+        className="reckoning-btn-secondary min-h-14 cursor-pointer text-base"
+      >
+        {takeLabel}
+      </label>
+      <input
+        id={takeId}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="sr-only"
+        onChange={handleChange}
+      />
+      <label
+        htmlFor={libraryId}
+        className="reckoning-btn-secondary min-h-14 cursor-pointer text-base"
+      >
+        {libraryLabel}
+      </label>
+      <input
+        id={libraryId}
+        type="file"
+        accept="image/*"
+        className="sr-only"
+        onChange={handleChange}
+      />
+    </div>
+  );
+}
+
 export default function CapturePage() {
   const router = useRouter();
   const { reload } = useSession();
-  const frontId = useId();
-  const sideId = useId();
+  const frontTakeId = useId();
+  const frontLibraryId = useId();
+  const sideTakeId = useId();
+  const sideLibraryId = useId();
   const weightId = useId();
   const noteId = useId();
 
@@ -109,44 +162,33 @@ export default function CapturePage() {
       <p className="mt-2 text-zinc-400">
         Front is required. Side is optional. Weight in kg.
       </p>
+      <p className="mt-2 text-sm text-zinc-500">
+        On iPhone/Android, use Take photo. On computer, use Choose from library.
+      </p>
 
       <div className="mt-6 space-y-6">
         <div>
           <Preview src={frontUrl} label="Front" />
-          <label
-            htmlFor={frontId}
-            className="reckoning-btn-secondary mt-3 min-h-14 cursor-pointer text-base"
-          >
-            {frontFile ? "Retake front" : "Front photo"}
-          </label>
-          <input
-            id={frontId}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            className="sr-only"
-            onChange={(event) => {
-              setFrontFile(event.target.files?.[0] ?? null);
-            }}
+          <PhotoActions
+            takeId={frontTakeId}
+            libraryId={frontLibraryId}
+            takeLabel={frontFile ? "Retake front photo" : "Take front photo"}
+            libraryLabel={
+              frontFile ? "Replace front from library" : "Choose front from library"
+            }
+            onPick={setFrontFile}
           />
         </div>
         <div>
           <Preview src={sideUrl} label="Side (optional)" />
-          <label
-            htmlFor={sideId}
-            className="reckoning-btn-secondary mt-3 min-h-14 cursor-pointer text-base"
-          >
-            {sideFile ? "Retake side" : "Side photo"}
-          </label>
-          <input
-            id={sideId}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            className="sr-only"
-            onChange={(event) => {
-              setSideFile(event.target.files?.[0] ?? null);
-            }}
+          <PhotoActions
+            takeId={sideTakeId}
+            libraryId={sideLibraryId}
+            takeLabel={sideFile ? "Retake side photo" : "Take side photo"}
+            libraryLabel={
+              sideFile ? "Replace side from library" : "Choose side from library"
+            }
+            onPick={setSideFile}
           />
         </div>
       </div>
