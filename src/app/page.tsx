@@ -15,6 +15,7 @@ import {
   getSortedOldestFirst,
   isCheckInDue,
 } from "@/lib/entries";
+import { readCachedFeedback } from "@/lib/feedback";
 import {
   hasOptedIntoReminders,
   isSunday,
@@ -29,6 +30,7 @@ export default function HomePage() {
     "idle" | "on" | "denied" | "unsupported"
   >("idle");
   const [sundayBanner, setSundayBanner] = useState(false);
+  const [latestFeedback, setLatestFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     if (!ready) return;
@@ -41,6 +43,22 @@ export default function HomePage() {
     setSundayBanner(isSunday() && isCheckInDue(entries));
   }, [ready, entries]);
 
+  const newest = getSortedNewestFirst(entries)[0];
+
+  useEffect(() => {
+    if (!ready || !newest) {
+      setLatestFeedback(null);
+      return;
+    }
+    let cancelled = false;
+    void readCachedFeedback(newest.id).then((payload) => {
+      if (!cancelled) setLatestFeedback(payload?.body ?? null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, newest]);
+
   async function enableReminders() {
     const permission = await requestSundayReminders();
     if (permission === "unsupported") setRemindState("unsupported");
@@ -52,7 +70,6 @@ export default function HomePage() {
     }
   }
 
-  const newest = getSortedNewestFirst(entries)[0];
   const due = isCheckInDue(entries);
   const daysLeft = daysUntilNextSunday();
   const sparkValues = getSortedOldestFirst(entries)
@@ -135,6 +152,17 @@ export default function HomePage() {
               : "Loading…"}
           </p>
         )}
+        {latestFeedback ? (
+          <Link
+            href={newest ? `/feedback?now=${newest.id}` : "/feedback"}
+            className="mt-3 block rounded-2xl border border-zinc-800 px-4 py-4 active:bg-zinc-950"
+          >
+            <p className="text-sm text-zinc-500">Last reckoning</p>
+            <p className="mt-2 text-base leading-snug text-zinc-200">
+              {latestFeedback}
+            </p>
+          </Link>
+        ) : null}
         <p className="mt-3 flex gap-4 text-sm text-zinc-500">
           <Link href="/timeline" className="min-h-11 py-2 hover:text-white">
             Timeline
@@ -185,8 +213,8 @@ export default function HomePage() {
           Signed in as {user?.email ?? "your account"}
         </p>
         <p className="mt-2 text-xs leading-relaxed text-zinc-600">
-          HTTPS in transit. Encrypted at rest. Only your account can read these
-          rows. No public feed.
+          Photos sync to your private account and may be processed with Gemini
+          to score YOUR progress. Not a public feed. Not for ads.
         </p>
         <button
           type="button"

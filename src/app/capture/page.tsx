@@ -237,7 +237,7 @@ export default function CapturePage() {
         side: sideFile,
       });
       await reload();
-      router.push("/timeline");
+      router.push(`/feedback?now=${id}`);
     } catch {
       setError("Couldn’t sync — try again");
       setSaving(false);

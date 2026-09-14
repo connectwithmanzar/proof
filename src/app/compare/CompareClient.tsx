@@ -15,6 +15,7 @@ import {
   getSortedOldestFirst,
   type ProgressEntry,
 } from "@/lib/entries";
+import { requestFeedback } from "@/lib/feedback";
 import type { PhotoKind } from "@/lib/photo-db";
 
 function pickDefaultIds(
@@ -88,6 +89,7 @@ export function CompareClient() {
   const [bId, setBId] = useState("");
   const [mode, setMode] = useState<CompareMode>("slider");
   const [kind, setKind] = useState<PhotoKind>("front");
+  const [feedback, setFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     if (!ready || entries.length < 2) return;
@@ -127,6 +129,26 @@ export function CompareClient() {
     [entries, bId],
   );
   const delta = a && b ? formatDeltaKg(b.weightKg - a.weightKg) : null;
+  const newerId =
+    a && b
+      ? new Date(a.createdAt).getTime() >= new Date(b.createdAt).getTime()
+        ? a.id
+        : b.id
+      : "";
+
+  useEffect(() => {
+    if (!ready || !newerId || entries.length < 2) {
+      setFeedback(null);
+      return;
+    }
+    let cancelled = false;
+    void requestFeedback(newerId).then((payload) => {
+      if (!cancelled) setFeedback(payload.body);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, newerId, entries.length]);
 
   return (
     <main className="px-5 pt-6">
@@ -162,6 +184,15 @@ export function CompareClient() {
               {delta}
             </p>
           </div>
+
+          {feedback ? (
+            <div className="mt-4 rounded-2xl border border-zinc-800 px-4 py-4">
+              <p className="text-sm text-zinc-500">Reckoning</p>
+              <p className="mt-2 text-base leading-snug text-zinc-200">
+                {feedback}
+              </p>
+            </div>
+          ) : null}
 
           <div className="mt-6 space-y-4">
             <EntryPicker

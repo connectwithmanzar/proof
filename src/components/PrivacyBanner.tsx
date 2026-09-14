@@ -19,8 +19,8 @@ export function PrivacyBanner() {
       role="status"
     >
       <p className="flex-1 text-sm leading-snug text-zinc-300">
-        Photos sync encrypted to your private Reckoning account. Only you can
-        see them. Not a public feed.
+        Photos sync to your private account and may be processed with Gemini
+        to score YOUR progress. Not a public feed. Not for ads.
       </p>
       <button
         type="button"

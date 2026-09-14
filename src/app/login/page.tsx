@@ -76,8 +76,8 @@ export default function LoginPage() {
       </p>
       <h1 className="mt-1 text-5xl font-semibold tracking-tight">Reckoning</h1>
       <p className="mt-4 text-base leading-snug text-zinc-400">
-        Photos sync encrypted to your private Reckoning account. Only you can
-        see them. Not a public feed.
+        Photos sync to your private account and may be processed with Gemini
+        to score YOUR progress. Not a public feed. Not for ads.
       </p>
 
       {!configured ? (

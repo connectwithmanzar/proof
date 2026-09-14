@@ -61,6 +61,16 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (!user && !isPublicPath(pathname)) {
+    if (pathname.startsWith("/api/")) {
+      const denied = NextResponse.json(
+        { error: "Sign in required" },
+        { status: 401 },
+      );
+      supabaseResponse.cookies.getAll().forEach((cookie) => {
+        denied.cookies.set(cookie);
+      });
+      return denied;
+    }
     const login = request.nextUrl.clone();
     login.pathname = "/login";
     login.search = "";
@@ -74,7 +84,7 @@ export async function middleware(request: NextRequest) {
     return redirectWithSession(next, supabaseResponse);
   }
 
-  if (user && !isPublicPath(pathname)) {
+  if (user && !isPublicPath(pathname) && !pathname.startsWith("/api/")) {
     const { data: profile, error } = await supabase
       .from("reckoning_profiles")
       .select("user_id")
