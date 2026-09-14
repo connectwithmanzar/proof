@@ -254,12 +254,12 @@ export function OnboardingWizard() {
 
       {draft.step === 0 ? (
         <>
-          <h1 className="text-4xl font-semibold tracking-tight">
-            Let&apos;s lock your baseline
+          <h1 className="text-5xl font-semibold tracking-tight">
+            Day one starts now.
           </h1>
-          <p className="mt-4 text-base leading-snug text-zinc-300">
-            One quick setup. After this, Sundays stay simple — photo, weight,
-            date. Reckoning watches the rest.
+          <p className="mt-4 text-lg leading-snug text-zinc-300">
+            Quick setup. Then Sundays stay simple — photo, weight, date.
+            I&apos;ll hunt the change.
           </p>
         </>
       ) : null}
