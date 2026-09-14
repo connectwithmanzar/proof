@@ -1,3 +1,4 @@
+import { compressImage } from "@/lib/compress-image";
 import {
   addEntry,
   getEntries,
@@ -102,7 +103,7 @@ async function uploadPhoto(
   const { supabase } = await requireUser();
   const path = photoObjectPath(userId, entryId, kind);
   const { error } = await supabase.storage.from(BUCKET).upload(path, blob, {
-    contentType: blob.type || "image/jpeg",
+    contentType: "image/jpeg",
     upsert: true,
   });
   if (error) throw new Error(error.message);
@@ -145,17 +146,20 @@ export async function saveCheckIn(input: {
   front: Blob;
   side?: Blob | null;
 }): Promise<ProgressEntry> {
+  const front = await compressImage(input.front);
+  const side = input.side ? await compressImage(input.side) : null;
+
   const entry: ProgressEntry = {
     id: input.id,
     createdAt: input.createdAt,
     weightKg: input.weightKg,
     note: input.note,
     hasFront: true,
-    hasSide: Boolean(input.side),
+    hasSide: Boolean(side),
   };
 
-  await putPhoto(entry.id, "front", input.front);
-  if (input.side) await putPhoto(entry.id, "side", input.side);
+  await putPhoto(entry.id, "front", front);
+  if (side) await putPhoto(entry.id, "side", side);
 
   const existing = getEntries();
   if (!existing.some((row) => row.id === entry.id)) {
@@ -165,8 +169,9 @@ export async function saveCheckIn(input: {
   }
 
   const { user } = await requireUser();
-  await uploadPhoto(user.id, entry.id, "front", input.front);
-  if (input.side) await uploadPhoto(user.id, entry.id, "side", input.side);
+  const uploads = [uploadPhoto(user.id, entry.id, "front", front)];
+  if (side) uploads.push(uploadPhoto(user.id, entry.id, "side", side));
+  await Promise.all(uploads);
   await upsertCloudEntry(user.id, entry);
   localStorage.setItem(CACHE_USER_KEY, user.id);
 
