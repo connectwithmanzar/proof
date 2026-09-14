@@ -1,3 +1,5 @@
+import { createHash } from "crypto";
+
 export const DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite";
 const GEMINI_TIMEOUT_MS = 25_000;
 const MAX_IMAGE_BYTES = 1_800_000;
@@ -15,14 +17,34 @@ export type GeminiImagePart = {
   data: string;
 };
 
+export function hashJpegBuffer(buffer: Buffer): string {
+  return createHash("sha256").update(buffer).digest("hex");
+}
+
+export async function hashJpeg(blob: Blob): Promise<string | null> {
+  if (blob.size <= 0) return null;
+  const buffer = Buffer.from(await blob.arrayBuffer());
+  return hashJpegBuffer(buffer);
+}
+
 export async function blobToInlineJpeg(
   blob: Blob,
 ): Promise<GeminiImagePart | null> {
+  const packed = await jpegPartAndHash(blob);
+  return packed?.part ?? null;
+}
+
+export async function jpegPartAndHash(
+  blob: Blob,
+): Promise<{ part: GeminiImagePart; hash: string } | null> {
   if (blob.size <= 0 || blob.size > MAX_IMAGE_BYTES) return null;
   const buffer = Buffer.from(await blob.arrayBuffer());
   return {
-    mimeType: "image/jpeg",
-    data: buffer.toString("base64"),
+    part: {
+      mimeType: "image/jpeg",
+      data: buffer.toString("base64"),
+    },
+    hash: hashJpegBuffer(buffer),
   };
 }
 
@@ -65,7 +87,7 @@ export async function generateGeminiText(input: {
         systemInstruction: { parts: [{ text: input.system }] },
         contents: [{ role: "user", parts }],
         generationConfig: {
-          temperature: 0.75,
+          temperature: 0.35,
           maxOutputTokens: 350,
         },
       }),

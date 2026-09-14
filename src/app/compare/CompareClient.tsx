@@ -15,6 +15,7 @@ import {
   getSortedOldestFirst,
   type ProgressEntry,
 } from "@/lib/entries";
+import { formatComparePeriod } from "@/lib/compare-period";
 import { requestFeedback } from "@/lib/feedback";
 import type { PhotoKind } from "@/lib/photo-db";
 
@@ -188,6 +189,16 @@ export function CompareClient() {
           {feedback ? (
             <div className="mt-4 rounded-2xl border border-zinc-800 px-4 py-4">
               <p className="text-sm text-zinc-500">Reckoning</p>
+              <p className="mt-1 text-xs uppercase tracking-[0.12em] text-zinc-500">
+                {formatComparePeriod(
+                  new Date(a.createdAt) <= new Date(b.createdAt)
+                    ? a.createdAt
+                    : b.createdAt,
+                  new Date(a.createdAt) <= new Date(b.createdAt)
+                    ? b.createdAt
+                    : a.createdAt,
+                )}
+              </p>
               <p className="mt-2 text-base leading-snug text-zinc-200">
                 {feedback}
               </p>

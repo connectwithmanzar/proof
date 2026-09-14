@@ -1,15 +1,24 @@
 import { NextResponse } from "next/server";
+import {
+  formatComparePeriod,
+  isTooSoonToCall,
+  spanDays,
+} from "@/lib/compare-period";
 import { FEEDBACK_FALLBACK, type FeedbackPayload } from "@/lib/feedback";
 import {
   baselineFeedbackBody,
   buildFeedbackSystemPrompt,
   buildFeedbackUserPrompt,
+  honestNoChangeBody,
+  honestTooSoonBody,
+  shouldReplaceShortSpanOvercall,
 } from "@/lib/server/feedback-prompt";
 import {
   blobToInlineJpeg,
   generateGeminiText,
   getGeminiApiKey,
   getGeminiModel,
+  jpegPartAndHash,
   type GeminiImagePart,
 } from "@/lib/server/gemini";
 import { rowToProfile, type ReckoningProfile } from "@/lib/profile-model";
@@ -39,6 +48,11 @@ function json(payload: FeedbackPayload, status = 200) {
   return NextResponse.json(payload, { status });
 }
 
+function periodFor(then: EntryRow | null, now: EntryRow): string | null {
+  if (!then || then.id === now.id) return null;
+  return formatComparePeriod(then.created_at, now.created_at);
+}
+
 function fallbackPayload(
   nowEntryId: string,
   extra?: Partial<FeedbackPayload>,
@@ -50,6 +64,7 @@ function fallbackPayload(
     nowEntryId,
     thenEntryId: extra?.thenEntryId ?? null,
     prevEntryId: extra?.prevEntryId ?? null,
+    period: extra?.period ?? null,
   };
 }
 
@@ -122,18 +137,18 @@ async function saveFeedback(
   });
 }
 
-async function downloadJpeg(
+async function downloadPhotoBlob(
   supabase: ReturnType<typeof createClient>,
   userId: string,
   entryId: string,
   kind: "front" | "side",
-): Promise<GeminiImagePart | null> {
+): Promise<Blob | null> {
   const path = photoPath(userId, entryId, kind);
   const { data, error } = await supabase.storage
     .from("reckoning-photos")
     .download(path);
   if (error || !data) return null;
-  return blobToInlineJpeg(data);
+  return data;
 }
 
 function resolveEntries(entries: EntryRow[], nowEntryId: string) {
@@ -156,17 +171,20 @@ export async function GET(request: Request) {
   }
 
   const cached = await loadCached(supabase, user.id, nowEntryId);
-  if (cached) {
-    return json({
-      body: cached.body,
-      cached: true,
-      baseline: false,
-      nowEntryId,
-      thenEntryId: cached.then_entry_id,
-      prevEntryId: cached.prev_entry_id,
-    });
+  if (!cached) {
+    return new NextResponse(null, { status: 204 });
   }
-  return new NextResponse(null, { status: 204 });
+  const entries = await loadEntries(supabase, user.id);
+  const resolved = resolveEntries(entries, nowEntryId);
+  return json({
+    body: cached.body,
+    cached: true,
+    baseline: false,
+    nowEntryId,
+    thenEntryId: cached.then_entry_id,
+    prevEntryId: cached.prev_entry_id,
+    period: resolved ? periodFor(resolved.then, resolved.now) : null,
+  });
 }
 
 export async function POST(request: Request) {
@@ -176,9 +194,14 @@ export async function POST(request: Request) {
   }
 
   let nowEntryId = "";
+  let regenerate = false;
   try {
-    const body = (await request.json()) as { nowEntryId?: unknown };
+    const body = (await request.json()) as {
+      nowEntryId?: unknown;
+      regenerate?: unknown;
+    };
     nowEntryId = typeof body.nowEntryId === "string" ? body.nowEntryId.trim() : "";
+    regenerate = body.regenerate === true;
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
@@ -200,6 +223,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Check-in not found" }, { status: 404 });
   }
   const { now, then, prev } = resolved;
+  const period = periodFor(then, now);
+
+  if (regenerate) {
+    await supabase
+      .from("reckoning_feedback")
+      .delete()
+      .eq("user_id", user.id)
+      .eq("now_entry_id", nowEntryId);
+  }
 
   const cached = await loadCached(supabase, user.id, nowEntryId);
   if (cached) {
@@ -210,6 +242,7 @@ export async function POST(request: Request) {
       nowEntryId,
       thenEntryId: cached.then_entry_id,
       prevEntryId: cached.prev_entry_id,
+      period,
     });
   }
 
@@ -230,13 +263,36 @@ export async function POST(request: Request) {
       nowEntryId: now.id,
       thenEntryId: null,
       prevEntryId: null,
+      period: null,
     });
   }
 
   const ids = {
     thenEntryId: then.id,
     prevEntryId: prev && prev.id !== then.id ? prev.id : null,
+    period,
   };
+
+  if (isTooSoonToCall(then.created_at, now.created_at)) {
+    const body = honestTooSoonBody(profile, period ?? "same day");
+    await saveFeedback(supabase, {
+      user_id: user.id,
+      now_entry_id: now.id,
+      then_entry_id: then.id,
+      prev_entry_id: ids.prevEntryId,
+      body,
+      model: "honest-too-soon",
+    });
+    return json({
+      body,
+      cached: false,
+      baseline: false,
+      nowEntryId: now.id,
+      thenEntryId: then.id,
+      prevEntryId: ids.prevEntryId,
+      period,
+    });
+  }
 
   if (!getGeminiApiKey()) {
     return json(fallbackPayload(now.id, ids));
@@ -252,28 +308,68 @@ export async function POST(request: Request) {
         nowEntryId,
         thenEntryId: stillCached.then_entry_id,
         prevEntryId: stillCached.prev_entry_id,
+        period,
       });
     }
 
-    const [thenFront, nowFront] = await Promise.all([
-      downloadJpeg(supabase, user.id, then.id, "front"),
-      downloadJpeg(supabase, user.id, now.id, "front"),
+    const [thenBlob, nowBlob] = await Promise.all([
+      downloadPhotoBlob(supabase, user.id, then.id, "front"),
+      downloadPhotoBlob(supabase, user.id, now.id, "front"),
     ]);
-    if (!thenFront || !nowFront) {
+    if (!thenBlob || !nowBlob) {
       return json(fallbackPayload(now.id, ids));
+    }
+
+    const [thenPacked, nowPacked] = await Promise.all([
+      jpegPartAndHash(thenBlob),
+      jpegPartAndHash(nowBlob),
+    ]);
+    if (!thenPacked || !nowPacked) {
+      return json(fallbackPayload(now.id, ids));
+    }
+    const thenFront = thenPacked.part;
+    const nowFront = nowPacked.part;
+
+    if (thenPacked.hash === nowPacked.hash) {
+      const body = honestNoChangeBody(
+        profile,
+        period ?? formatComparePeriod(then.created_at, now.created_at),
+        now.weight_kg,
+      );
+      await saveFeedback(supabase, {
+        user_id: user.id,
+        now_entry_id: now.id,
+        then_entry_id: then.id,
+        prev_entry_id: ids.prevEntryId,
+        body,
+        model: "honest-no-change",
+      });
+      return json({
+        body,
+        cached: false,
+        baseline: false,
+        nowEntryId: now.id,
+        thenEntryId: then.id,
+        prevEntryId: ids.prevEntryId,
+        period,
+      });
     }
 
     const images: GeminiImagePart[] = [thenFront, nowFront];
     const bothSides = then.has_side && now.has_side;
     if (bothSides) {
       const [thenSide, nowSide] = await Promise.all([
-        downloadJpeg(supabase, user.id, then.id, "side"),
-        downloadJpeg(supabase, user.id, now.id, "side"),
+        downloadPhotoBlob(supabase, user.id, then.id, "side").then((blob) =>
+          blob ? blobToInlineJpeg(blob) : null,
+        ),
+        downloadPhotoBlob(supabase, user.id, now.id, "side").then((blob) =>
+          blob ? blobToInlineJpeg(blob) : null,
+        ),
       ]);
       if (thenSide && nowSide) images.push(thenSide, nowSide);
     }
 
-    const text = await generateGeminiText({
+    let text = await generateGeminiText({
       system: buildFeedbackSystemPrompt(profile),
       userText: buildFeedbackUserPrompt({
         profile,
@@ -300,6 +396,11 @@ export async function POST(request: Request) {
       images,
     });
 
+    const days = spanDays(then.created_at, now.created_at);
+    if (shouldReplaceShortSpanOvercall(text, days)) {
+      text = honestTooSoonBody(profile, period ?? `${days} days`);
+    }
+
     await saveFeedback(supabase, {
       user_id: user.id,
       now_entry_id: now.id,
@@ -316,6 +417,7 @@ export async function POST(request: Request) {
       nowEntryId: now.id,
       thenEntryId: then.id,
       prevEntryId: ids.prevEntryId,
+      period,
     });
   } catch {
     return json(fallbackPayload(now.id, ids));

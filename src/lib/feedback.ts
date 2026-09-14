@@ -5,6 +5,7 @@ export type FeedbackPayload = {
   nowEntryId: string;
   thenEntryId: string | null;
   prevEntryId: string | null;
+  period?: string | null;
 };
 
 export const FEEDBACK_FALLBACK =
@@ -24,14 +25,18 @@ function asPayload(value: unknown, nowEntryId: string): FeedbackPayload | null {
       typeof row.nowEntryId === "string" ? row.nowEntryId : nowEntryId,
     thenEntryId: typeof row.thenEntryId === "string" ? row.thenEntryId : null,
     prevEntryId: typeof row.prevEntryId === "string" ? row.prevEntryId : null,
+    period: typeof row.period === "string" ? row.period : null,
   };
 }
 
-async function postFeedback(nowEntryId: string): Promise<FeedbackPayload> {
+async function postFeedback(
+  nowEntryId: string,
+  regenerate: boolean,
+): Promise<FeedbackPayload> {
   const response = await fetch("/api/reckoning/feedback", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ nowEntryId }),
+    body: JSON.stringify({ nowEntryId, regenerate }),
   });
   const json: unknown = await response.json().catch(() => null);
   const payload = asPayload(json, nowEntryId);
@@ -43,13 +48,19 @@ async function postFeedback(nowEntryId: string): Promise<FeedbackPayload> {
     nowEntryId,
     thenEntryId: null,
     prevEntryId: null,
+    period: null,
   };
 }
 
-export function requestFeedback(nowEntryId: string): Promise<FeedbackPayload> {
+export function requestFeedback(
+  nowEntryId: string,
+  options?: { regenerate?: boolean },
+): Promise<FeedbackPayload> {
+  const regenerate = Boolean(options?.regenerate);
+  if (regenerate) inflight.delete(nowEntryId);
   const existing = inflight.get(nowEntryId);
   if (existing) return existing;
-  const promise = postFeedback(nowEntryId).finally(() => {
+  const promise = postFeedback(nowEntryId, regenerate).finally(() => {
     inflight.delete(nowEntryId);
   });
   inflight.set(nowEntryId, promise);

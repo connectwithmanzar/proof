@@ -36,3 +36,9 @@ GEMINI_MODEL=gemini-3.5-flash-lite
 - Missing key or API fail → fallback text; check-in still in Timeline
 
 Photos are sent from the Reckoning server to Gemini over HTTPS. The key never ships in the phone/browser bundle.
+
+## 4. Honesty + period
+
+- Never invent gains on the same photo or same day. Hype is OK; fake thicker chest/shoulders are not.
+- Feedback always names the real gap (`same day`, `6 days`, `about 1 year`) — never rounds a same-day pair up to “1 week”.
+- After deploy, clear a bad cached line: Supabase → `reckoning_feedback` → delete that user’s row for the check-in, **or** open `/feedback?now=<entry-id>&regenerate=1`.
