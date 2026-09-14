@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getDisplayPhoto } from "@/lib/repo";
 import type { PhotoKind } from "@/lib/photo-db";
+import { useDisplayPhoto } from "@/lib/use-display-photo";
 
 type PhotoThumbProps = {
   id: string;
@@ -17,33 +16,7 @@ export function PhotoThumb({
   alt,
   className,
 }: PhotoThumbProps) {
-  const [src, setSrc] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    let objectUrl: string | null = null;
-
-    getDisplayPhoto(id, kind)
-      .then((blob) => {
-        if (!blob) return;
-        const next = URL.createObjectURL(blob);
-        if (cancelled) {
-          URL.revokeObjectURL(next);
-          return;
-        }
-        objectUrl = next;
-        setSrc(next);
-      })
-      .catch(() => {
-        if (!cancelled) setSrc(null);
-      });
-
-    return () => {
-      cancelled = true;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-      setSrc(null);
-    };
-  }, [id, kind]);
+  const src = useDisplayPhoto(id, kind);
 
   if (!src) {
     return (

@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { PhotoThumb } from "@/components/PhotoThumb";
+import {
+  CompareStage,
+  type CompareMode,
+} from "@/components/CompareStage";
 import { useSession } from "@/components/SessionProvider";
 import {
   formatDeltaKg,
@@ -12,6 +15,7 @@ import {
   getSortedOldestFirst,
   type ProgressEntry,
 } from "@/lib/entries";
+import type { PhotoKind } from "@/lib/photo-db";
 
 function pickDefaultIds(
   oldestFirst: ProgressEntry[],
@@ -45,7 +49,7 @@ function EntryPicker({
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="reckoning-field mt-2"
+        className="reckoning-field mt-2 py-3"
       >
         {entries.map((entry) => (
           <option key={entry.id} value={entry.id}>
@@ -82,6 +86,8 @@ export function CompareClient() {
   const entries = getSortedOldestFirst(sessionEntries);
   const [aId, setAId] = useState("");
   const [bId, setBId] = useState("");
+  const [mode, setMode] = useState<CompareMode>("slider");
+  const [kind, setKind] = useState<PhotoKind>("front");
 
   useEffect(() => {
     if (!ready || entries.length < 2) return;
@@ -120,20 +126,20 @@ export function CompareClient() {
     () => entries.find((entry) => entry.id === bId),
     [entries, bId],
   );
-  const delta =
-    a && b ? formatDeltaKg(b.weightKg - a.weightKg) : null;
+  const delta = a && b ? formatDeltaKg(b.weightKg - a.weightKg) : null;
 
   return (
     <main className="px-5 pt-6">
       <h1 className="text-4xl font-semibold tracking-tight">Compare</h1>
+      <p className="mt-2 text-zinc-400">You vs you.</p>
 
       {!ready ? (
-        <p className="mt-4 text-zinc-500">Loading…</p>
+        <p className="mt-4 text-zinc-500">Loading your check-ins…</p>
       ) : entries.length < 2 ? (
         <div className="mt-8">
           <p className="text-lg leading-snug text-zinc-300">
-            Need two check-ins to compare. Save this week, then come back after
-            next Sunday.
+            Two Sunday check-ins unlock Compare. Capture this week, then come
+            back after the next one.
           </p>
           <Link href="/capture" className="reckoning-btn-primary mt-6">
             Add a check-in
@@ -141,38 +147,14 @@ export function CompareClient() {
         </div>
       ) : a && b ? (
         <>
-          <p className="mt-2 text-zinc-400">
-            A is usually your oldest. B is usually your newest.
-          </p>
-
-          <div className="mt-6 grid grid-cols-2 gap-3">
-            <div>
-              <PhotoThumb
-                id={a.id}
-                alt={`Front from ${formatEntryDate(a.createdAt)}`}
-                className="aspect-[3/4] w-full rounded-2xl object-cover"
-              />
-              <p className="mt-3 text-xl font-semibold">
-                {formatKg(a.weightKg)}
-              </p>
-              <p className="mt-1 text-xs text-zinc-500">
-                {formatEntryDate(a.createdAt)}
-              </p>
-            </div>
-            <div>
-              <PhotoThumb
-                id={b.id}
-                alt={`Front from ${formatEntryDate(b.createdAt)}`}
-                className="aspect-[3/4] w-full rounded-2xl object-cover"
-              />
-              <p className="mt-3 text-xl font-semibold">
-                {formatKg(b.weightKg)}
-              </p>
-              <p className="mt-1 text-xs text-zinc-500">
-                {formatEntryDate(b.createdAt)}
-              </p>
-            </div>
-          </div>
+          <CompareStage
+            a={a}
+            b={b}
+            kind={kind}
+            mode={mode}
+            onKindChange={setKind}
+            onModeChange={setMode}
+          />
 
           <div className="mt-6 rounded-2xl border border-zinc-800 px-4 py-4 text-center">
             <p className="text-sm text-zinc-500">Change (B − A)</p>
@@ -181,15 +163,15 @@ export function CompareClient() {
             </p>
           </div>
 
-          <div className="mt-8 space-y-6">
+          <div className="mt-6 space-y-4">
             <EntryPicker
-              label="A"
+              label="A · Then"
               value={aId}
               entries={entries}
               onChange={selectA}
             />
             <EntryPicker
-              label="B"
+              label="B · Now"
               value={bId}
               entries={entries}
               onChange={selectB}
