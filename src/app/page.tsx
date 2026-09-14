@@ -24,7 +24,7 @@ import {
 } from "@/lib/reminders";
 
 export default function HomePage() {
-  const { user, entries, ready, signOut } = useSession();
+  const { user, profile, entries, ready, signOut } = useSession();
   const [remindState, setRemindState] = useState<
     "idle" | "on" | "denied" | "unsupported"
   >("idle");
@@ -69,7 +69,9 @@ export default function HomePage() {
       </p>
       <h1 className="mt-1 text-5xl font-semibold tracking-tight">Reckoning</h1>
       <p className="mt-3 text-base leading-snug text-zinc-400">
-        Front photo + weight, once a Sunday. Face the change yourself.
+        {profile?.display_name
+          ? `Let's go, ${profile.display_name}. Front photo + weight, once a Sunday.`
+          : "Front photo + weight, once a Sunday. Face the change yourself."}
       </p>
 
       {sundayBanner ? (

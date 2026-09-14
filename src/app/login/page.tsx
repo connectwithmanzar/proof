@@ -42,7 +42,7 @@ export default function LoginPage() {
           return;
         }
         if (data.session) {
-          router.replace("/");
+          router.replace("/onboarding");
           router.refresh();
           return;
         }
@@ -58,7 +58,7 @@ export default function LoginPage() {
         setError(mapAuthError(signError.message));
         return;
       }
-      router.replace("/");
+      router.replace("/onboarding");
       router.refresh();
     } catch (caught) {
       setError(

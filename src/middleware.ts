@@ -19,6 +19,14 @@ function isPublicPath(pathname: string): boolean {
   return false;
 }
 
+function redirectWithSession(url: URL, sessionResponse: NextResponse) {
+  const redirect = NextResponse.redirect(url);
+  sessionResponse.cookies.getAll().forEach((cookie) => {
+    redirect.cookies.set(cookie);
+  });
+  return redirect;
+}
+
 export async function middleware(request: NextRequest) {
   const url = getSupabaseUrl();
   const key = getSupabaseAnonKey();
@@ -56,14 +64,38 @@ export async function middleware(request: NextRequest) {
     const login = request.nextUrl.clone();
     login.pathname = "/login";
     login.search = "";
-    return NextResponse.redirect(login);
+    return redirectWithSession(login, supabaseResponse);
   }
 
   if (user && pathname === "/login") {
-    const home = request.nextUrl.clone();
-    home.pathname = "/";
-    home.search = "";
-    return NextResponse.redirect(home);
+    const next = request.nextUrl.clone();
+    next.pathname = "/";
+    next.search = "";
+    return redirectWithSession(next, supabaseResponse);
+  }
+
+  if (user && !isPublicPath(pathname)) {
+    const { data: profile, error } = await supabase
+      .from("reckoning_profiles")
+      .select("user_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!error) {
+      const complete = Boolean(profile);
+      if (!complete && pathname !== "/onboarding") {
+        const onboarding = request.nextUrl.clone();
+        onboarding.pathname = "/onboarding";
+        onboarding.search = "";
+        return redirectWithSession(onboarding, supabaseResponse);
+      }
+      if (complete && pathname === "/onboarding") {
+        const home = request.nextUrl.clone();
+        home.pathname = "/";
+        home.search = "";
+        return redirectWithSession(home, supabaseResponse);
+      }
+    }
   }
 
   return supabaseResponse;

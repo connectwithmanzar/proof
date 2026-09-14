@@ -11,16 +11,23 @@ import {
 } from "react";
 import type { User } from "@supabase/supabase-js";
 import type { ProgressEntry } from "@/lib/entries";
+import {
+  cacheProfile,
+  getProfile,
+  type ReckoningProfile,
+} from "@/lib/profile";
 import { clearWorkingCache, syncAfterLogin } from "@/lib/repo";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
 type SessionContextValue = {
   user: User | null;
+  profile: ReckoningProfile | null;
   entries: ProgressEntry[];
   ready: boolean;
   configured: boolean;
   reload: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -29,20 +36,32 @@ const SessionContext = createContext<SessionContextValue | null>(null);
 export function SessionProvider({ children }: { children: ReactNode }) {
   const configured = isSupabaseConfigured();
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<ReckoningProfile | null>(null);
   const [entries, setEntries] = useState<ProgressEntry[]>([]);
   const [ready, setReady] = useState(!configured);
 
   const reload = useCallback(async () => {
     if (!user) return;
-    const next = await syncAfterLogin(user.id);
+    const [next, nextProfile] = await Promise.all([
+      syncAfterLogin(user.id),
+      getProfile(),
+    ]);
     setEntries(next);
+    setProfile(nextProfile);
   }, [user]);
+
+  const refreshProfile = useCallback(async () => {
+    const nextProfile = await getProfile();
+    setProfile(nextProfile);
+  }, []);
 
   const signOut = useCallback(async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
     clearWorkingCache();
+    cacheProfile(null);
     setUser(null);
+    setProfile(null);
     setEntries([]);
     window.location.assign("/login");
   }, []);
@@ -59,6 +78,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setUser(nextUser);
       if (!nextUser) {
         syncedFor.current = null;
+        setProfile(null);
         setEntries([]);
         setReady(true);
         return;
@@ -73,8 +93,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       }
       syncedFor.current = nextUser.id;
       try {
-        const next = await syncAfterLogin(nextUser.id);
-        if (!cancelled) setEntries(next);
+        const [next, nextProfile] = await Promise.all([
+          syncAfterLogin(nextUser.id),
+          getProfile(),
+        ]);
+        if (!cancelled) {
+          setEntries(next);
+          setProfile(nextProfile);
+        }
       } catch {
         syncedFor.current = null;
         if (!cancelled) setEntries([]);
@@ -101,8 +127,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [configured]);
 
   const value = useMemo(
-    () => ({ user, entries, ready, configured, reload, signOut }),
-    [user, entries, ready, configured, reload, signOut],
+    () => ({
+      user,
+      profile,
+      entries,
+      ready,
+      configured,
+      reload,
+      refreshProfile,
+      signOut,
+    }),
+    [user, profile, entries, ready, configured, reload, refreshProfile, signOut],
   );
 
   return (
